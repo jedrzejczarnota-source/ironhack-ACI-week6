@@ -10,13 +10,13 @@ These are the three post-MVP sprints from the attached **Game Studio Competitor 
 - **Key deliverable:** One free rival snapshot plus a 15-minute feedback call for each participant.
 - **Success metric:** At least 6 participants say the snapshot is useful, and at least 3 ask for another snapshot.
 
-## Sprint 2 — Weekly Watch (2 weeks)
+## Sprint 2 — Weekly Watch (4 weeks)
 
 - **Goal:** Test recurring usage and whether a regular competitor watch creates enough value to support payment.
 - **Target user/buyer:** Six studios, prioritizing interested studios carried over from Sprint 1.
 - **Channel or motion:** Direct outreach to the interested studios. 
-- **Key deliverable:** Credits that allow each studio to generate three reports over two weeks. Studios upload their own high-level strategy documents to the report generator (which also shows their commitment to the product).
-- **Success metric:** At least 50% use all credits, email open rate exceeds 60%, and at least one studio makes a decision to pay.
+- **Key deliverable:** Credits that allow each studio to generate one report per week, released gradually over four weeks. Studios upload their own high-level strategy documents to the report generator (which also shows their commitment to the product).
+- **Success metric:** At least 50% use all credits, email report open rate exceeds 60%, and at least one studio makes a decision to pay.
 
 ## Sprint 3 — First Buyers (4 weeks)
 
