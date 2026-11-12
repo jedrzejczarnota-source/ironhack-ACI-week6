@@ -1,0 +1,1036 @@
+{
+  "name": "Mobile Game Competitor Snapshot mk.III",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Mobile Game Competitor Snapshot",
+        "formDescription": "Enter a competitor studio and your email address to receive an AI-generated competitive intelligence briefing. Optionally upload your studio's strategy & KPI playbook PDF.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Competitor studio name",
+              "fieldName": "competitor",
+              "placeholder": "Playrix",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Your email address (to receive the report)",
+              "fieldType": "email",
+              "fieldName": "customerEmail",
+              "placeholder": "name@company.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Custom Studio Strategy Playbook (Optional PDF)",
+              "fieldType": "file",
+              "fieldName": "policyPdf",
+              "acceptFileTypes": ".pdf"
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Research competitor",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Request received! Our AI agent is gathering App Store telemetry, news, and company data. Your formatted competitor report will arrive in your email inbox in about 30–45 seconds."
+            }
+          }
+        }
+      },
+      "id": "26a65df8-8e19-4ab9-95f0-670c55d6bd7f",
+      "name": "Competitor Input",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -480,
+        224
+      ],
+      "webhookId": "70a06fb2-eda7-47a7-983b-1ec883920944"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "check-custom-pdf-uploaded",
+              "leftValue": "={{ Boolean($input.item.binary?.policyPdf) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cbdd0b2a-438c-41e7-b668-7b9c67e45042",
+      "name": "Has Custom Strategy PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -256,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "project-week6",
+          "mode": "list",
+          "cachedResultName": "project-week6"
+        },
+        "embeddingBatchSize": 50,
+        "options": {
+          "clearNamespace": true,
+          "pineconeNamespace": "custom-strategy"
+        }
+      },
+      "id": "b40642c1-d99a-46c9-8d6b-afeae893f17a",
+      "name": "Insert Custom Strategy PDF",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "pineconeApi": {
+          "id": "cL7Oqo6q2laGVL7o",
+          "name": "PineconeApi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "610c75ce-cf95-4184-b8b8-a9371a8e84f0",
+      "name": "OpenAI Document Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        176
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "nzQLJ8wkzvEzlLtO",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "loader": "pdfLoader",
+        "binaryDataKey": "policyPdf",
+        "textSplittingMode": "custom",
+        "options": {
+          "splitPages": true,
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source",
+                "value": "custom_uploaded_strategy_playbook.pdf"
+              },
+              {
+                "name": "document_type",
+                "value": "studio_strategy_playbook"
+              }
+            ]
+          }
+        }
+      },
+      "id": "da126676-a320-4571-9786-bcbca9431e02",
+      "name": "Load Uploaded Strategy PDF",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 150,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "id": "9edb5c05-4421-44fb-8981-2edfb26de073",
+      "name": "Strategy PDF Chunking",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        128,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "custom-ns-competitor",
+              "name": "competitor",
+              "value": "={{ $('Competitor Input').first().json.competitor }}",
+              "type": "string"
+            },
+            {
+              "id": "custom-ns-value",
+              "name": "strategyNamespace",
+              "value": "custom-strategy",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "71f99aff-ade9-4124-a686-44193e5a1d39",
+      "name": "Use Custom Strategy Namespace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "default-ns-competitor",
+              "name": "competitor",
+              "value": "={{ $('Competitor Input').first().json.competitor }}",
+              "type": "string"
+            },
+            {
+              "id": "default-ns-value",
+              "name": "strategyNamespace",
+              "value": "northstar-strategy",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "198b5824-42a0-4e18-a2c2-fd06e53db4b1",
+      "name": "Use Default Northstar Namespace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ctx-competitor",
+              "name": "competitor",
+              "value": "={{ $json.competitor }}",
+              "type": "string"
+            },
+            {
+              "id": "ctx-namespace",
+              "name": "strategyNamespace",
+              "value": "={{ $json.strategyNamespace ?? 'northstar-strategy' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "53196774-903d-4b79-9a58-66c7ff4cd4a1",
+      "name": "Start Parallel Research",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        592,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"query\": \"{{ $('Competitor Input').first().json.competitor }} mobile games lifetime revenue annual bookings downloads SensorTower AppMagic PocketGamer\", \"search_depth\": \"advanced\", \"topic\": \"general\", \"max_results\": 7, \"include_answer\": true }",
+        "options": {}
+      },
+      "id": "8c58215b-ce88-45a9-971c-e7c9ff46d401",
+      "name": "Tavily Company Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        48
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "IdkimKOVRIrXKKKA",
+          "name": "Tavily API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tavily-competitor",
+              "name": "competitor",
+              "value": "={{ $('Competitor Input').first().json.competitor }}",
+              "type": "string"
+            },
+            {
+              "id": "tavily-answer",
+              "name": "tavilyAnswer",
+              "value": "={{ $json.answer ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "tavily-results",
+              "name": "tavilyResults",
+              "value": "={{ $json.results ?? [] }}",
+              "type": "array"
+            },
+            {
+              "id": "3d92215c-a166-47f1-bdfa-66fc70e0dfc1",
+              "name": "tavilyStatus",
+              "value": "={{ $json.error ? \"failed\" : \"ok\" }}",
+              "type": "string"
+            },
+            {
+              "id": "13de3052-660c-40ec-a032-edeb4b0ced41",
+              "name": "tavilyError",
+              "value": "={{ $json.error?.message ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "id": "aecdadf0-4620-46cb-8f1d-806f294f0f8f",
+      "name": "Normalize Tavily Research",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1072,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "id": "0c3d361e-7e8a-40f9-acdf-8efbb8a58106",
+      "name": "Combine Research Inputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1344,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://gnews.io/api/v4/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('Competitor Input').first().json.competitor }}"
+            },
+            {
+              "name": "lang",
+              "value": "en"
+            },
+            {
+              "name": "max",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a0ab3229-7af9-431d-8f3b-e18a99f8f6e1",
+      "name": "GNews Latest News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        224
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 4000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z7kq3FJdLpqzU1ro",
+          "name": "GNews API"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "gnews-competitor",
+              "name": "competitor",
+              "value": "={{ $('Competitor Input').first().json.competitor }}",
+              "type": "string"
+            },
+            {
+              "id": "gnews-total",
+              "name": "newsTotalArticles",
+              "value": "={{ $json.totalArticles ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "gnews-articles",
+              "name": "newsArticles",
+              "value": "={{ $json.articles ?? [] }}",
+              "type": "array"
+            },
+            {
+              "id": "2c2a81ec-51af-46a0-8db8-2b7ca55480a8",
+              "name": "newsStatus",
+              "value": "={{ $json.error ? \"failed\" : \"ok\" }}",
+              "type": "string"
+            },
+            {
+              "id": "24a1b31b-9c10-49e0-a91b-38b1fc7c8d32",
+              "name": "newsError",
+              "value": "={{ $json.error?.message ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "id": "198ee589-0a6c-4d49-8559-86440c00c930",
+      "name": "Normalize GNews Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1072,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://itunes.apple.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "term",
+              "value": "={{ $('Competitor Input').first().json.competitor }}"
+            },
+            {
+              "name": "limit",
+              "value": "5"
+            },
+            {
+              "name": "media",
+              "value": "software"
+            },
+            {
+              "name": "entity",
+              "value": "software"
+            },
+            {
+              "name": "country",
+              "value": "us"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "122245b9-4dda-47e3-a73c-0a6801b51a76",
+      "name": "Apple App Store Telemetry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        400
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "appstore-competitor",
+              "name": "competitor",
+              "value": "={{ $('Competitor Input').first().json.competitor }}",
+              "type": "string"
+            },
+            {
+              "id": "appstore-count",
+              "name": "appStoreResultCount",
+              "value": "={{ $json.resultCount ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "appstore-results",
+              "name": "appStoreResults",
+              "value": "{{\n  ($json.results ?? (typeof $json.data === 'string' ? JSON.parse($json.data).results : []) ?? []).map(app => {\n    const releaseMs = new Date(app.releaseDate).getTime();\n    const updateMs = new Date(app.currentVersionReleaseDate).getTime();\n    const nowMs = Date.now();\n    const ageYears = Math.max(0.1, (nowMs - releaseMs) / (1000 * 60 * 60 * 24 * 365.25));\n    const daysSinceUpdate = Math.max(0, Math.floor((nowMs - updateMs) / (1000 * 60 * 60 * 24)));\n    const ratingsPerYear = Math.round((app.userRatingCount ?? 0) / ageYears);\n\n    return {\n      trackName: app.trackName,\n      developer: app.artistName,\n      primaryGenre: app.primaryGenreName,\n      averageUserRating: Number((app.averageUserRating ?? 0).toFixed(2)),\n      userRatingCount: app.userRatingCount ?? 0,\n      ratingsPerYearVelocity: ratingsPerYear,\n      daysSinceLastUpdate: daysSinceUpdate,\n      liveOpsCadenceSignal: daysSinceUpdate <= 21 ? \"Active LiveOps (<=21d)\" : (daysSinceUpdate <= 60 ? \"Moderate (22-60d)\" : \"Maintenance / Slow (>60d)\"),\n      firstReleaseDate: app.releaseDate ? app.releaseDate.slice(0, 10) : \"Unknown\",\n      lastUpdateDate: app.currentVersionReleaseDate ? app.currentVersionReleaseDate.slice(0, 10) : \"Unknown\",\n      currentVersion: app.version\n    };\n  })\n}}",
+              "type": "array"
+            },
+            {
+              "id": "4c55b0bc-c65f-415a-8f6b-20638b9e14a3",
+              "name": "appStoreStatus",
+              "value": "={{ $json.error ? \"failed\" : \"ok\" }}",
+              "type": "string"
+            },
+            {
+              "id": "01a68566-b5bb-4cf4-8cd8-8a530144314e",
+              "name": "appStoreError",
+              "value": "={{ $json.error?.message ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "id": "f4c86851-8855-49e9-9cf1-add61d21c098",
+      "name": "Normalize App Store Results",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1072,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ \"Create a competitor report for \" + $json.competitor + \".\\n\\n\" + \"Company research:\\n\" + JSON.stringify($json.tavilyResults ?? []) + \"\\n\\n\" + \"Tavily summary:\\n\" + ($json.tavilyAnswer ?? \"\") + \"\\n\\n\" + \"Recent news:\\n\" + JSON.stringify($json.newsArticles ?? []) + \"\\n\\n\" + \"App Store data:\\n\" + JSON.stringify($json.appStoreResults ?? []) }}",
+        "options": {
+          "systemMessage": "You are a mobile gaming competitive intelligence analyst.\n\nReturn the report using exactly these four sections:\n\n## 1. Who They Are\nWrite max 3 paragraphs summarizing the studio, headquarters, business model, and core genres using Tavily research.\n\n## 2. How They're Doing (Portfolio & KPI Snapshot)\n**Studio-Level Revenue & Downloads (Reported Estimates):** First, write 2–3 bullet points summarizing any studio-wide or flagship-title revenue, bookings, or download figures found in the Company Research (Tavily) or News data. Always cite the reporting source (e.g., SensorTower, AppMagic, PocketGamer). If none are found in the text, state \"Studio-level revenue/download figures not publicly reported in current search results.\"\n**iOS Storefront Telemetry Table:** Render a Markdown table of the top 3–5 live iOS games from the App Store data with these exact columns:\n| Game Title | Genre | Rating (Stars) | Total Ratings | Rating Velocity (/yr) | Last Update | LiveOps Signal |\n\nUse only the provided research and App Store data. Don't invent information or data.\n\n## 3. What's New\nProvide exactly three bullet points covering recent news, launches, or business headlines from GNews. Include the source title and markdown link for each item.\n\n## 4. What It Means For Our Studio\nProvide exactly three actionable takeaways comparing the competitor’s moves with our studio’s genre focus and KPI benchmarks. You must use the Pinecone tool before writing this section. Format each takeaway as: **Observation -> Implication for Our Studio -> Low-Risk Test -> Success Metric**. \n\nDo not invent missing information. Clearly distinguish facts, estimates, and recommendations. If a research source failed, explicitly mention that its data was unavailable."
+        }
+      },
+      "id": "14073b5c-ea09-4a8c-a47e-a99d873c6d69",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1888,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "89b9717a-29ff-498b-8f7b-68a09c489847",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1888,
+        256
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "nzQLJ8wkzvEzlLtO",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Retrieve our studio strategy and mobile gaming KPI benchmarks for comparing competitor moves with our studio’s focus.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "project-week6",
+          "mode": "list",
+          "cachedResultName": "project-week6"
+        },
+        "options": {
+          "pineconeNamespace": "={{ $('Start Parallel Research').first().json.strategyNamespace ?? 'northstar-strategy' }}"
+        }
+      },
+      "id": "c018c682-cc75-4b65-89b6-5dc23f89a6cf",
+      "name": "Pinecone Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        2080,
+        256
+      ],
+      "credentials": {
+        "pineconeApi": {
+          "id": "cL7Oqo6q2laGVL7o",
+          "name": "PineconeApi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "47cdf07e-2b19-4891-94c8-e939ff92f21a",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2080,
+        416
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "nzQLJ8wkzvEzlLtO",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Competitor Input').first().json.customerEmail || 'jedrzej.czarnota@icloud.com' }}",
+        "subject": "=Competitor report: {{ $(\"Competitor Input\").first().json.competitor }}",
+        "message": "={{\n`<div style=\"background-color:#f4f6f9; padding:32px 16px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1e293b; line-height:1.6;\">\n  <div style=\"max-width:740px; margin:0 auto; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid #e2e8f0;\">\n    <div style=\"background:linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding:28px 32px; color:#ffffff;\">\n      <div style=\"font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#93c5fd; font-weight:700; margin-bottom:6px;\">\n        Competitive Intelligence Briefing\n      </div>\n      <h1 style=\"margin:0; font-size:24px; font-weight:700; color:#ffffff;\">\n        ${$('Competitor Input').first().json.competitor} — Studio & Portfolio Snapshot\n      </h1>\n      <div style=\"margin-top:8px; font-size:13px; color:#cbd5e1;\">\n        Grounded against strategy namespace: <strong>${$('Start Parallel Research').first().json.strategyNamespace ?? 'northstar-strategy'}</strong>\n      </div>\n    </div>\n    <div style=\"padding:28px 32px; font-size:15px; color:#334155;\">\n      <style>\n        h2 { color:#0f172a; font-size:18px; border-bottom:2px solid #e2e8f0; padding-bottom:6px; margin-top:26px; margin-bottom:12px; }\n        h3 { color:#1e3a8a; font-size:15px; margin-top:18px; margin-bottom:8px; }\n        p { margin:0 0 12px 0; }\n        ul, ol { margin:0 0 16px 0; padding-left:22px; }\n        li { margin-bottom:8px; }\n        table { width:100%; border-collapse:collapse; margin:16px 0; font-size:13px; }\n        th { background-color:#f1f5f9; color:#0f172a; text-align:left; padding:10px 12px; border:1px solid #cbd5e1; font-weight:600; }\n        td { padding:9px 12px; border:1px solid #e2e8f0; color:#334155; }\n        tr:nth-child(even) td { background-color:#f8fafc; }\n        a { color:#2563eb; text-decoration:none; font-weight:500; }\n      </style>\n      ${$json.reportHtml}\n    </div>\n    <div style=\"background-color:#f8fafc; padding:16px 32px; border-top:1px solid #e2e8f0; font-size:12px; color:#64748b; text-align:center;\">\n      Generated autonomously via n8n • Sources: Tavily Advanced Search, GNews API, Apple App Store Telemetry & Pinecone RAG\n    </div>\n  </div>\n</div>`\n}}",
+        "options": {}
+      },
+      "id": "b05b286c-645c-4ff4-a0a9-9291e919a186",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2560,
+        32
+      ],
+      "webhookId": "5f08dd37-e567-403f-846d-c428f5150181",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xyfQxhZi37GROImI",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "No research data was returned from Tavily, GNews, or the Apple App Store. A competitor report couldn't be generated."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        448
+      ],
+      "id": "a700156e-faac-463a-b4d9-5039a96e18e5",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "97337732-81d7-4e72-a766-ede0b45032c5",
+              "leftValue": "={{ \n  (\n    ($json.tavilyResults ?? []).length +\n    ($json.newsArticles ?? []).length +\n    ($json.appStoreResults ?? []).length\n  ) > 0\n}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        240
+      ],
+      "id": "f865be0b-ac17-4e7d-8d10-f3f14eb69244",
+      "name": "Check research availability"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.output }}",
+        "destinationKey": "reportHtml",
+        "options": {
+          "tables": true
+        }
+      },
+      "id": "9d23cabc-6fd3-45ba-9bdf-0943d6e8b551",
+      "name": "Convert Report to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        2272,
+        32
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Competitor Input": {
+      "main": [
+        [
+          {
+            "node": "Has Custom Strategy PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Custom Strategy PDF?": {
+      "main": [
+        [
+          {
+            "node": "Insert Custom Strategy PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Default Northstar Namespace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Custom Strategy PDF": {
+      "main": [
+        [
+          {
+            "node": "Use Custom Strategy Namespace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Document Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert Custom Strategy PDF",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Uploaded Strategy PDF": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert Custom Strategy PDF",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategy PDF Chunking": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Load Uploaded Strategy PDF",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Custom Strategy Namespace": {
+      "main": [
+        [
+          {
+            "node": "Start Parallel Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Default Northstar Namespace": {
+      "main": [
+        [
+          {
+            "node": "Start Parallel Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Parallel Research": {
+      "main": [
+        [
+          {
+            "node": "Tavily Company Research",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GNews Latest News",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apple App Store Telemetry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Company Research": {
+      "main": [
+        [
+          {
+            "node": "Normalize Tavily Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Tavily Research": {
+      "main": [
+        [
+          {
+            "node": "Combine Research Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Research Inputs": {
+      "main": [
+        [
+          {
+            "node": "Check research availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GNews Latest News": {
+      "main": [
+        [
+          {
+            "node": "Normalize GNews Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize GNews Results": {
+      "main": [
+        [
+          {
+            "node": "Combine Research Inputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Apple App Store Telemetry": {
+      "main": [
+        [
+          {
+            "node": "Normalize App Store Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize App Store Results": {
+      "main": [
+        [
+          {
+            "node": "Combine Research Inputs",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Convert Report to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check research availability": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Report to HTML": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "gdd8Pcz5DJJUJB74",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "56691ff0-7712-47d1-880a-3a20f67cf1a1",
+  "meta": {
+    "instanceId": "49b42c0051ee1c04693c425c4d57eeb1072531f55d1515f0d9aeb5a5977f030a"
+  },
+  "id": "VoscMDzAFk8KVu0C",
+  "tags": [
+    {
+      "updatedAt": "2026-11-09T10:32:13.094Z",
+      "createdAt": "2026-11-09T10:32:13.094Z",
+      "id": "0RyqR6PmqNotiSC2",
+      "name": "learning"
+    },
+    {
+      "updatedAt": "2026-11-09T10:32:16.252Z",
+      "createdAt": "2026-11-09T10:32:16.252Z",
+      "id": "YZqFaDLHq9h3MYR4",
+      "name": "project"
+    },
+    {
+      "name": "final",
+      "id": "oN2Im8wIV7x7XCEr",
+      "updatedAt": "2026-11-11T10:40:34.231Z",
+      "createdAt": "2026-11-11T10:40:34.231Z"
+    }
+  ]
+}
